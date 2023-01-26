@@ -2,9 +2,18 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <sys/mman.h>
+#include <sys/stat.h>        
+#include <fcntl.h> 
 
-int ProccessUserInput(){
+pthread_cond_t  cv;
+pthread_mutex_t mtx;
+
+void ProccessUserInput(){
     while(true){
+
+        pthread_mutex_lock(&mtx);
+        pthread_cond_wait(&cv, &mtx);
 
         std::string input;
 
@@ -33,13 +42,37 @@ int ProccessUserInput(){
                 input.insert(++it, 'B');
             }
         }
+
+        // Put the processed input string in the shared buffer
+        *shared_buffer = input;
+
+        // Wait for further user input
+        // ...
     }
 }
 
 
 
-int main(int argc, char **argv){
+int main(int argc, char **argv) {
 
+    // Create a shared memory object
+    int shm_fd = shm_open("/my_shared_buffer", O_CREAT | O_RDWR, 0644);
+
+
+
+    // Set the size of the shared memory object
+    ftruncate(shm_fd, 96);
+
+    // Map the shared memory object to the virtual memory of the process
+    std::string* shared_buffer = (std::string*) mmap(NULL, sizeof(std::string), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+
+    // Use the shared buffer in your threads
+    // ...
+
+    // Unmap the shared memory object
+    //munmap(shared_buffer, BUFFER_SIZE);
+
+    shm_unlink("/my_shared_buffer");
     return 0;
-
 }
