@@ -8,7 +8,7 @@ int ProccessUserInput(){
 
         std::string input;
 
-        // Inputing a string of digits (not longer than 64 characters)
+        std::cout << "Enter a string of digits (not longer than 64 characters)" << std::endl;
         std::getline(std::cin, input);
 
         // Check that the input string only consists of digits
