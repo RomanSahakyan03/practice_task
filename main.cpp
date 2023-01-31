@@ -5,11 +5,14 @@
 #include <sys/mman.h>
 #include <sys/stat.h>        
 #include <fcntl.h> 
+#include <unistd.h>
+#include <sys/shm.h>
 
 pthread_cond_t  cv;
 pthread_mutex_t mtx;
 
-void ProccessUserInput(){
+void *ProccessUserInput(void *args){
+    std::string *shared_buffer = static_cast<std::string *>(args);
     while(true){
 
         pthread_mutex_lock(&mtx);
@@ -51,28 +54,51 @@ void ProccessUserInput(){
     }
 }
 
+void* PrintProcessedInput(void* args) {
+    std::string *shared_buffer = static_cast<std::string *>(args);
+    while(true) {
+        pthread_mutex_lock(&mtx);
+        while(shared_buffer->empty()) {
+            pthread_cond_wait(&cv, &mtx);
+        }
+
+        // Print the processed input string
+        std::cout << "Processed input: " << *shared_buffer << std::endl;
+
+        shared_buffer->clear();
+
+        // Signal that the buffer has been read
+        pthread_cond_signal(&cv);
+        pthread_mutex_unlock(&mtx);
+    }
+    return NULL;
+}
 
 
 int main(int argc, char **argv) {
 
     // Create a shared memory object
-    int shm_fd = shm_open("/my_shared_buffer", O_CREAT | O_RDWR, 0644);
+     int shm_id = shmget(IPC_PRIVATE, 1024, 0644 | IPC_CREAT);
+
+     if (shm_id == -1) {
+        std::cerr << "Error creating shared memory." << std::endl;
+        return 1;
+    }
 
 
+    void *shm_ptr = shmat(shm_id, NULL, 0);
+    if (shm_ptr == (void*)-1) {
+        std::cerr << "Error attaching shared memory." << std::endl;
+        return 1;
+    }
 
-    // Set the size of the shared memory object
-    ftruncate(shm_fd, 96);
 
-    // Map the shared memory object to the virtual memory of the process
-    std::string* shared_buffer = (std::string*) mmap(NULL, sizeof(std::string), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-
+    pthread_t thread1, thread2;
 
     // Use the shared buffer in your threads
-    // ...
-
-    // Unmap the shared memory object
-    //munmap(shared_buffer, BUFFER_SIZE);
-
-    shm_unlink("/my_shared_buffer");
+    pthread_create(&thread1, NULL, ProccessUserInput, (void*) shm_ptr);
+    pthread_create(&thread2, NULL, PrintProcessedInput, (void*) shm_ptr);
+    
+    
     return 0;
 }
