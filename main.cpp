@@ -121,6 +121,10 @@ int main(int argc, char **argv) {
     pthread_create(&thread1, NULL, ProccessUserInput, (void*) shm_ptr);
     pthread_create(&thread2, NULL, PrintProcessedInput, (void*) shm_ptr);
     
-    
+    // Detach the shared memory from the process's address space
+    shmdt(shm_ptr);
+
+    // Mark the shared memory for destruction
+    shmctl(shm_id, IPC_RMID, NULL);
     return 0;
 }
