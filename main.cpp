@@ -120,11 +120,16 @@ int main(int argc, char **argv) {
     // Pass the shared buffer pointer to the thread functions
     pthread_create(&thread1, NULL, ProccessUserInput, (void*) shm_ptr);
     pthread_create(&thread2, NULL, PrintProcessedInput, (void*) shm_ptr);
+
+    // Join threads
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
     
     // Detach the shared memory from the process's address space
     shmdt(shm_ptr);
 
     // Mark the shared memory for destruction
     shmctl(shm_id, IPC_RMID, NULL);
+    
     return 0;
 }
