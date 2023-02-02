@@ -18,8 +18,11 @@ void *ProccessUserInput(void *args){
         // Lock the shared buffer to prevent race conditions
         pthread_mutex_lock(&mtx);
 
-        // Wait for a signal indicating that the shared buffer is free to write to
-        pthread_cond_wait(&cv, &mtx);
+        while(!shared_buffer->empty())
+        {
+            // Wait for a signal indicating that the shared buffer is free to write to
+            pthread_cond_wait(&cv, &mtx);
+        }
 
         std::string input;
 
@@ -120,7 +123,7 @@ int main(int argc, char **argv) {
     // Pass the shared buffer pointer to the thread functions
     pthread_create(&thread1, NULL, ProccessUserInput, (void*) shm_ptr);
     pthread_create(&thread2, NULL, PrintProcessedInput, (void*) shm_ptr);
-
+    
     // Join threads
     pthread_join(thread1, NULL);
     pthread_join(thread2, NULL);
