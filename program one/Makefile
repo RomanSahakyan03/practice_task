@@ -1,5 +1,10 @@
-all:
-	gcc main.cpp -lstdc++ -pthread -o progone
+CC = gcc
+CFLAGS = -Wall -pthread -lstdc++
+
+all: main
+
+main: main.cpp
+	$(CC) $(CFLAGS) main.cpp -o main
 
 clean:
-	rm *.o progone
+	rm -f main
